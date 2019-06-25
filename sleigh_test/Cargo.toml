@@ -1,0 +1,10 @@
+[package]
+name = "sleigh_test"
+version = "0.1.0"
+authors = ["Erik Gilling <konkers@konkers.net>"]
+edition = "2018"
+
+[dependencies]
+serde = "1.0.93"
+sleigh = { path = "../sleigh" }
+sleigh_derive = { path = "../sleigh_derive" }

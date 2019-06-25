@@ -1,0 +1,11 @@
+[package]
+name = "sleigh"
+version = "0.1.0"
+authors = ["Erik Gilling <konkers@konkers.net>"]
+edition = "2018"
+
+[dependencies]
+byteorder = "1"
+serde = "1.0.93"
+serde_json = "1.0"
+sled = "0.24.1"

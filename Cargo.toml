@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "sleigh",
+    "sleigh_derive",
+    "sleigh_test",
+]
