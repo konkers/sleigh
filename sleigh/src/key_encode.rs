@@ -1,15 +1,14 @@
-extern crate byteorder;
-
-use byteorder::{BigEndian, WriteBytesExt};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Error, ErrorKind, Result, Write};
 
-pub trait KeyEncoder {
+pub trait KeyEncoder<T = Self> {
     fn encode_key(&self, bytes: &mut [u8]) -> Result<usize>;
     fn key_len(&self) -> usize;
+    fn decode_key(bytes: &[u8]) -> Result<T>;
 }
 
 macro_rules! num_key_encoder_impl {
-    ($type: ty, $write: tt, $size: tt) => {
+    ($type: ty, $write: tt, $read: tt, $size: tt) => {
         impl KeyEncoder for $type {
             fn encode_key(&self, bytes: &mut [u8]) -> Result<usize> {
                 if bytes.len() < $size {
@@ -25,16 +24,25 @@ macro_rules! num_key_encoder_impl {
             fn key_len(&self) -> usize {
                 $size
             }
+
+            fn decode_key(bytes: &[u8]) -> Result<$type> {
+                if bytes.len() < $size {
+                    return Err(Error::new(ErrorKind::UnexpectedEof, "Buffer too small."));
+                }
+
+                let mut c = std::io::Cursor::new(bytes);
+                c.$read::<BigEndian>()
+            }
         }
     };
 }
 
-num_key_encoder_impl!(u16, write_u16, 2);
-num_key_encoder_impl!(i16, write_i16, 2);
-num_key_encoder_impl!(u32, write_u32, 4);
-num_key_encoder_impl!(i32, write_i32, 4);
-num_key_encoder_impl!(u64, write_u64, 8);
-num_key_encoder_impl!(i64, write_i64, 8);
+num_key_encoder_impl!(u16, write_u16, read_u16, 2);
+num_key_encoder_impl!(i16, write_i16, read_i16, 2);
+num_key_encoder_impl!(u32, write_u32, read_u32, 4);
+num_key_encoder_impl!(i32, write_i32, read_i32, 4);
+num_key_encoder_impl!(u64, write_u64, read_u64, 8);
+num_key_encoder_impl!(i64, write_i64, read_i64, 8);
 
 impl KeyEncoder for String {
     fn encode_key(&self, bytes: &mut [u8]) -> Result<usize> {
@@ -43,13 +51,17 @@ impl KeyEncoder for String {
         }
 
         let mut c = std::io::Cursor::new(bytes);
-        c.write(self.as_bytes())?;
+        c.write_all(self.as_bytes())?;
 
         Ok(self.len())
     }
 
     fn key_len(&self) -> usize {
         self.len()
+    }
+
+    fn decode_key(bytes: &[u8]) -> Result<String> {
+        String::from_utf8(bytes.to_vec()).map_err(|e| Error::new(ErrorKind::InvalidData, e))
     }
 }
 
